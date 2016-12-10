@@ -67,8 +67,25 @@ def evaluate(tree, env)
     env[tree[1]] = evaluate(tree[2], env)
   when "var_ref"
     env[tree[1]]
+  when "if"
+    if evaluate(tree[1], env)
+      evaluate(tree[2], env)
+    else
+      evaluate(tree[3], env)
+    end
+  when "while"
+    while evaluate(tree[1], env)
+      evaluate(tree[2], env)
+    end
+  when "while2"
+    evaluate(tree[2], env)
+    while evaluate(tree[1], env)
+      evaluate(tree[2], env)
+    end
   else
-    "wrong parameter => #{tree[0]}"
+    p("wrong parameter => #{tree[0]}")
+    pp(tree)
+    raise("unknown node")
   end
 end
 
