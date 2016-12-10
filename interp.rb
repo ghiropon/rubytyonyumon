@@ -1,86 +1,96 @@
 require "minruby"
 
-def evaluate(tree, env)
+def evaluate(tree, genv, lenv)
   case tree[0]
   when "lit"
     tree[1]
   when "+"
-    env["plus_count"] += 1 if env["plus_count"] != nil
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    lenv["plus_count"] += 1 if lenv["plus_count"] != nil
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left + right
   when "-"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left - right
   when "*"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left * right
   when "/"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left / right
   when "%"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left % right
   when "**"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left ** right
   when "=="
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left == right
   when "!="
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left != right
   when ">"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left > right
   when ">="
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left >= right
   when "<"
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left < right
   when "<="
-    left = evaluate(tree[1], env)
-    right = evaluate(tree[2], env)
+    left = evaluate(tree[1], genv, lenv)
+    right = evaluate(tree[2], genv, lenv)
     left <= right
-  when "func_call" # 仮の実装
-    p(evaluate(tree[2], env))
+  when "func_call"
+    args = []
+    i = 0
+    while tree[i + 2]
+      args[i] = evaluate(tree[i + 2], genv, lenv)
+      i = i + 1
+    end
+    mhd = genv[tree[1]]
+    if mhd[0] == "builtin"
+      minruby_call(mhd[1], args)
+    else
+    end
   when "stmts"
     i = 1
     last = nil
     while tree[i] != nil
-      last = evaluate(tree[i], env)
+      last = evaluate(tree[i], genv, lenv)
       i = i + 1
     end
     last
   when "var_assign"
-    env[tree[1]] = evaluate(tree[2], env)
+    lenv[tree[1]] = evaluate(tree[2], genv, lenv)
   when "var_ref"
-    env[tree[1]]
+    lenv[tree[1]]
   when "if"
-    if evaluate(tree[1], env)
-      evaluate(tree[2], env)
+    if evaluate(tree[1], genv, lenv)
+      evaluate(tree[2], genv, lenv)
     else
-      evaluate(tree[3], env)
+      evaluate(tree[3], genv, lenv)
     end
   when "while"
-    while evaluate(tree[1], env)
-      evaluate(tree[2], env)
+    while evaluate(tree[1], genv, lenv)
+      evaluate(tree[2], genv, lenv)
     end
   when "while2"
-    evaluate(tree[2], env)
-    while evaluate(tree[1], env)
-      evaluate(tree[2], env)
+    evaluate(tree[2], genv, lenv)
+    while evaluate(tree[1], genv, lenv)
+      evaluate(tree[2], genv, lenv)
     end
   else
     p("wrong parameter => #{tree[0]}")
@@ -97,8 +107,11 @@ str = minruby_load()
 tree = minruby_parse(str)
 
 # ③計算の木を実行（計算）する
-env = {}
-answer = evaluate(tree, env)
+genv = { "p" => ["builtin", "p"],
+         "raise" => ["builtin", "raise"]
+         "add" => ["builtin", "add"] }
+lenv = {}
+answer = evaluate(tree, genv, lenv)
 
 # ④計算結果を出力する
 # p(answer)
