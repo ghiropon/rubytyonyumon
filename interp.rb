@@ -53,18 +53,6 @@ def evaluate(tree, genv, lenv)
     left = evaluate(tree[1], genv, lenv)
     right = evaluate(tree[2], genv, lenv)
     left <= right
-  when "func_call"
-    args = []
-    i = 0
-    while tree[i + 2]
-      args[i] = evaluate(tree[i + 2], genv, lenv)
-      i = i + 1
-    end
-    mhd = genv[tree[1]]
-    if mhd[0] == "builtin"
-      minruby_call(mhd[1], args)
-    else
-    end
   when "stmts"
     i = 1
     last = nil
@@ -92,6 +80,28 @@ def evaluate(tree, genv, lenv)
     while evaluate(tree[1], genv, lenv)
       evaluate(tree[2], genv, lenv)
     end
+  when "func_call"
+    args = []
+    i = 0
+    while tree[i + 2]
+      args[i] = evaluate(tree[i + 2], genv, lenv)
+      i = i + 1
+    end
+    mhd = genv[tree[1]]
+    if mhd[0] == "builtin"
+      minruby_call(mhd[1], args)
+    else
+      new_env = {}
+      params = mhd[1]
+      i = 0
+      while params[i]
+        new_env[params[i]] = args[i]
+        i = i + 1
+      end
+      evaluate(mhd[2], genv, new_env)
+    end
+  when "func_def"
+    genv[tree[1]] = ["user_defined", tree[2], tree[3]]
   else
     p("wrong parameter => #{tree[0]}")
     pp(tree)
@@ -108,8 +118,7 @@ tree = minruby_parse(str)
 
 # ③計算の木を実行（計算）する
 genv = { "p" => ["builtin", "p"],
-         "raise" => ["builtin", "raise"]
-         "add" => ["builtin", "add"] }
+         "raise" => ["builtin", "raise"] }
 lenv = {}
 answer = evaluate(tree, genv, lenv)
 
