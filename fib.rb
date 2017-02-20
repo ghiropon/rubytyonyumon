@@ -6,4 +6,4 @@ def fib(x)
   end
 end
 
-p(fib(5))
+p(fib(6))

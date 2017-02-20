@@ -5,58 +5,33 @@ def evaluate(tree, genv, lenv)
   when "lit"
     tree[1]
   when "+"
-    lenv["plus_count"] += 1 if lenv["plus_count"] != nil
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left + right
+    evaluate(tree[1], genv, lenv) + evaluate(tree[2], genv, lenv)
   when "-"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left - right
+    evaluate(tree[1], genv, lenv) - evaluate(tree[2], genv, lenv)
   when "*"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left * right
+    evaluate(tree[1], genv, lenv) * evaluate(tree[2], genv, lenv)
   when "/"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left / right
+    evaluate(tree[1], genv, lenv) / evaluate(tree[2], genv, lenv)
   when "%"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left % right
+    evaluate(tree[1], genv, lenv) % evaluate(tree[2], genv, lenv)
   when "**"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left ** right
+    evaluate(tree[1], genv, lenv) ** evaluate(tree[2], genv, lenv)
   when "=="
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left == right
+    evaluate(tree[1], genv, lenv) == evaluate(tree[2], genv, lenv)
   when "!="
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left != right
+    evaluate(tree[1], genv, lenv) != evaluate(tree[2], genv, lenv)
   when ">"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left > right
+    evaluate(tree[1], genv, lenv) > evaluate(tree[2], genv, lenv)
   when ">="
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left >= right
+    evaluate(tree[1], genv, lenv) >= evaluate(tree[2], genv, lenv)
   when "<"
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left < right
+    evaluate(tree[1], genv, lenv) < evaluate(tree[2], genv, lenv)
   when "<="
-    left = evaluate(tree[1], genv, lenv)
-    right = evaluate(tree[2], genv, lenv)
-    left <= right
+    evaluate(tree[1], genv, lenv) <= evaluate(tree[2], genv, lenv)
   when "stmts"
     i = 1
     last = nil
-    while tree[i] != nil
+    while tree[i]
       last = evaluate(tree[i], genv, lenv)
       i = i + 1
     end
@@ -75,11 +50,8 @@ def evaluate(tree, genv, lenv)
     while evaluate(tree[1], genv, lenv)
       evaluate(tree[2], genv, lenv)
     end
-  when "while2"
-    evaluate(tree[2], genv, lenv)
-    while evaluate(tree[1], genv, lenv)
-      evaluate(tree[2], genv, lenv)
-    end
+  when "func_def"
+    genv[tree[1]] = ["user_defined", tree[2], tree[3]]
   when "func_call"
     args = []
     i = 0
@@ -91,17 +63,42 @@ def evaluate(tree, genv, lenv)
     if mhd[0] == "builtin"
       minruby_call(mhd[1], args)
     else
-      new_env = {}
+      new_lenv = {}
       params = mhd[1]
       i = 0
       while params[i]
-        new_env[params[i]] = args[i]
+        new_lenv[params[i]] = args[i]
         i = i + 1
       end
-      evaluate(mhd[2], genv, new_env)
+      evaluate(mhd[2], genv, new_lenv)
     end
-  when "func_def"
-    genv[tree[1]] = ["user_defined", tree[2], tree[3]]
+  when "ary_new"
+    ary = []
+    i = 0
+    while tree[i + 1]
+      ary[i] = evaluate(tree[i + 1], genv, lenv)
+      i = i + 1
+    end
+    ary
+  when "ary_ref"
+    ary = evaluate(tree[1], genv, lenv)
+    idx = evaluate(tree[2], genv, lenv)
+    ary[idx]
+  when "ary_assign"
+    ary = evaluate(tree[1], genv, lenv)
+    idx = evaluate(tree[2], genv, lenv)
+    val = evaluate(tree[3], genv, lenv)
+    ary[idx] = val
+  when "hash_new"
+    hsh = {}
+    i = 0
+    while tree[i + 1]
+      key = evaluate(tree[i + 1], genv, lenv)
+      val = evaluate(tree[i + 2], genv, lenv)
+      hsh[key] = val
+      i = i + 2
+    end
+    hsh
   else
     p("wrong parameter => #{tree[0]}")
     pp(tree)
@@ -118,7 +115,12 @@ tree = minruby_parse(str)
 
 # ③計算の木を実行（計算）する
 genv = { "p" => ["builtin", "p"],
-         "raise" => ["builtin", "raise"] }
+         "raise" => ["builtin", "raise"],
+         "require" => ["builtin", "require"],
+         "minruby_parse" => ["builtin", "minruby_parse"],
+         "minruby_load" => ["builtin", "minruby_load"],
+         "minruby_call" => ["builtin", "minruby_call"]
+       }
 lenv = {}
 answer = evaluate(tree, genv, lenv)
 
